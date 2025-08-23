@@ -8,9 +8,18 @@ ARG TARGETARCH
 
 RUN apk add --no-cache tzdata
 
-COPY komari-${TARGETOS}-${TARGETARCH} /app/komari
+# 提前 COPY 所有二进制，放在 /src，后续根据架构选择
+COPY komari-* /src/
 
-RUN chmod +x /app/komari
+ARG TARGETPLATFORM
+RUN case "${TARGETPLATFORM}" in \
+    "linux/amd64") BIN_NAME="komari-linux-amd64" ;; \
+    "linux/arm64") BIN_NAME="komari-linux-arm64" ;; \
+    "linux/arm/v7") BIN_NAME="komari-linux-arm-v7" ;; \
+    *) echo "Unsupported platform: ${TARGETPLATFORM}" && exit 1 ;; \
+    esac && \
+    cp /src/$BIN_NAME /app/komari && \
+    chmod +x /app/komari
 
 ENV GIN_MODE=release
 ENV KOMARI_DB_TYPE=sqlite
